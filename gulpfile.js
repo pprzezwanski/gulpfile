@@ -1,178 +1,185 @@
 const { src, dest, parallel, watch, series } = require('gulp');
 
-const pug = require('gulp-pug')
-const sass = require('gulp-sass')
-const postcss = require('gulp-postcss')
 const autoprefixer = require('autoprefixer');
-const cssnano = require('cssnano');
-const browserSync = require('browser-sync')
-const del = require('del')
-const sourcemaps = require('gulp-sourcemaps')
-const uglify = require('gulp-uglify')
-const rename = require('gulp-rename')
-const concat = require('gulp-concat')
-const imagemin = require('gulp-imagemin')
-const svgstore = require('gulp-svgstore')
 const babel = require('gulp-babel')
-const size = require('gulp-size')
-const newer = require('gulp-newer')
-const fs = require('fs')
-const path = require('path')
-const merge = require('merge-stream')
-const htmlmin = require('gulp-htmlmin')
-const stylelint = require('gulp-stylelint')
+const browserSync = require('browser-sync')
+const concat = require('gulp-concat')
+const cssnano = require('cssnano');
+const del = require('del')
 const eslint = require('gulp-eslint')
+const fs = require('fs')
+const gulpif = require('gulp-if')
+const htmlmin = require('gulp-htmlmin')
+const imagemin = require('gulp-imagemin')
+const merge = require('merge-stream')
+const newer = require('gulp-newer')
+const path = require('path')
 const plumber = require('gulp-plumber')
 const pkg = require('./package.json')
-const gulpif = require('gulp-if')  
+const postcss = require('gulp-postcss')
+const pug = require('gulp-pug')
+const rename = require('gulp-rename')
+const sass = require('gulp-sass')
+const size = require('gulp-size')
+const stylelint = require('gulp-stylelint')
+const sourcemaps = require('gulp-sourcemaps')
+const svgsprite = require('gulp-svg-sprite')
+const uglify = require('gulp-uglify')
+const webpack = require("webpack")
+const webpackconfig = require("./webpack.config.js")
+const webpackstream = require("webpack-stream")
 
-// setup environment variable:
+sass.compiler = require('node-sass');
+   
+// to set environment variable to production uncomment the line below:
 // process.env.NODE_ENV = 'production';
 
-const devBuild = ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production')
-
-// hot module replacement - set to false if you want to refresh the browser manually
-const hmr = true
-
-// show build type
-console.log(pkg.name + ' ' + pkg.version + ', ' + (devBuild ? 'development' : 'production') + ' build');
-
-// config object
-const paths = {
-	devFolder: './src',
-    buildFolder: './dist',
-    sass: {
-        in: './src/sass/**/*.scss',
-        out: './dist/css'
+const config = {
+    devMode: ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production'),
+    hot: true, // hot module replacement - set to false if you want to refresh the browser manually
+    webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
+    checkSizes: false, // if true 'gulp build' will log how much space we have gained with minifying website
+    paths: {
+        devFolder: './src',
+        buildFolder: './dist',
+        lintReportsFolder: './reports/lint',
+        sass: {
+            in: './src/sass/**/*.scss',
+            exclude: '!./src/sass/vendor/*.scss',
+            out: './dist/css'
+        },
+        pug: {
+            in: './src/pug/*.pug',
+            out: './dist/'
+        },
+        js: {
+            in: {
+                modules: './src/js/bundle/modules/*.js',
+                vendor: './src/js/vendor/*.js*'
+            }, 
+            out: './dist/js'
+        },
+        images: {
+            in: ['./src/images/**/*.{png,jpg,jpeg,svg}'],
+            out: './dist/images'
+        },
+        fonts: {
+            in: './src/fonts/**/*.{woff,woff2}',
+            out: './dist/fonts/'
+        },
+        sprites: {
+            folder: './src/icons',
+            out: './dist/icons'
+        }
     },
-	pug: {
-        in: './src/pug/*.pug',
-        out: './dist/'
+    sass: { // config for gulp-sass plugin
+        precision: 10,
+        // imagePath: './src/images', // will be prepended to image name in sass files
     },
-    js: {
-        in: {
-            modules: './src/js/bundle/modules/*.js',
-            vendor: './src/js/vendor/*.js*'
-        }, 
-        out: './dist/js'
+    sprite: { // config for gulp-svg-sprite plugin
+        mode: {
+            symbol: { // symbol mode to build the SVG
+                render: {
+                    css: false, // CSS output option for icon sizing
+                    scss: false // SCSS output option for icon sizing
+                },
+            }
+        }
     },
-	images: {
-		in: ['./src/images/**/*.{png,jpg,jpeg,svg}'],
-		out: './dist/images'
-	},
-	fonts: {
-		in: './src/fonts/**/*.{woff,woff2}',
-		out: './dist/fonts/'
-	},
-	sprites: {
-		folder: './src/icons',
-		out: './dist/icons'
-	}
+    styleLint: { // config for gulp-stylelint plugin
+        failAfterError: false,
+        reportOutputDir: 'reports/lint',
+        reporters: [{ formatter: 'string', save: 'sass-lint-report.txt', console: false }]
+    }
 }
 
-// images
-const images = () => src(paths.images.in)
-    .pipe(newer(paths.images.out))
-    .pipe(gulpif(!devBuild, size({ title: 'before imagemin:' })))
-    .pipe(imagemin())
-    .pipe(gulpif(!devBuild, size({ title: 'after imagemin:' })))
-	.pipe(dest(paths.images.out));
+// log config highlights at the beginning of a task
+console.log(
+    pkg.name + ' ' + pkg.version + '\n'
+    + 'mode: ' + (config.devMode ? 'development' : 'production') + '\n'
+    + 'js bundling: ' + (config.webpacked ? 'webpack' : 'concatenation') + '\n'
+    + 'browser refresh type: ' + (config.hot ? 'hot module replacement': 'watch')
+);
 
-// icons in sprites
+// utils
 const getFolders = dir => fs.readdirSync(dir)
 	.filter(file => fs.statSync(path.join(dir, file)).isDirectory())
-	
+
+// images
+const images = () => src(config.paths.images.in)
+    .pipe(newer(config.paths.images.out))
+    .pipe(gulpif(config.checkSizes, size({ title: 'before imagemin:' })))
+    .pipe(imagemin())
+    .pipe(gulpif(config.checkSizes, size({ title: 'after imagemin:' })))
+	.pipe(dest(config.paths.images.out));
+
+// icons in sprites
 const sprites = done => {
-	const folders = getFolders(paths.sprites.folder)
+	const folders = getFolders(config.paths.sprites.folder)
     if (folders.length === 0) return done()
-    
-    const root = src(path.join(paths.sprites.folder, '/*.svg'))
-        .pipe(svgstore({ inlineSvg: true }))
+    const root = src(path.join(config.paths.sprites.folder, '/*.svg'))
+        .pipe(svgsprite(config.sprite))
         .pipe(rename('sprite.svg'))
-        .pipe(gulpif(!devBuild, size({ title: 'main sprite:' })))
-        // .pipe(size({ title: 'main sprite:' }))
-        .pipe(dest(paths.sprites.out))
-
+        .pipe(gulpif(config.checkSizes, size({ title: 'main sprite:' })))
+        .pipe(dest(config.paths.sprites.out))
 	const tasks = folders
-		.map((folder, index) => src(path.join(paths.sprites.folder, folder, '/**/*.svg'))
-			.pipe(svgstore({ inlineSvg: true }))
+		.map((folder, index) => src(path.join(config.paths.sprites.folder, folder, '/**/*.svg'))
+            .pipe(svgsprite(config.sprite))
             .pipe(rename('sprite-' + folder + '.svg'))
-            .pipe(gulpif(!devBuild, size({ title: 'additional sprite:' })))
-            // .pipe(size({ title: 'additional sprite:' }))
-			.pipe(dest(paths.sprites.out))
+            .pipe(gulpif(config.checkSizes, size({ title: 'additional sprite:' })))
+			.pipe(dest(config.paths.sprites.out))
     )
-
 	return merge(tasks, root);
 }
 
 // fonts
-const fonts = () => src(paths.fonts.in)
-	.pipe(newer(paths.fonts.out))
-	.pipe(dest(paths.fonts.out))
+const fonts = () => src(config.paths.fonts.in)
+	.pipe(newer(config.paths.fonts.out))
+	.pipe(dest(config.paths.fonts.out))
   
 // pug
-const html = () => src(paths.pug.in)
+const html = () => src(config.paths.pug.in)
     .pipe(pug())
-    .pipe(size({ title: 'HTML before:' }))
+    .pipe(gulpif(config.checkSizes, size({ title: 'HTML before:' })))
     .pipe(htmlmin({ collapseWhitespace: true }))
-    .pipe(size({ title: 'HTML after:' })) 
-	.pipe(dest(paths.pug.out))
+    .pipe(gulpif(config.checkSizes, size({ title: 'HTML after:' }))) 
+	.pipe(dest(config.paths.pug.out))
 
 // sass
-sass.compiler = require('node-sass');
-const styles = () => src(paths.sass.in)
-    .pipe(sourcemaps.init())
-    .pipe(stylelint({
-        failAfterError: false,
-        reportOutputDir: 'reports/lint',
-        reporters: [{ formatter: 'string', save: 'sass-lint-report.txt', console: false }]
-    }))
-    .pipe(sass().on('error', sass.logError))
+const styles = () => src([config.paths.sass.in, config.paths.sass.exclude])
+    .pipe(gulpif(config.devMode, sourcemaps.init()))
+    .pipe(stylelint(config.styleLint))
+    .pipe(sass((config.sass)).on('error', sass.logError))
+    .pipe(gulpif(config.checkSizes, size({ title: 'css before:' })))
     .pipe(postcss([
         autoprefixer({browsers: ['last 1 version']}),
         cssnano()
     ]))
-   .pipe(sourcemaps.write('.'))
-   .pipe(dest(paths.sass.out))
+    .pipe(gulpif(config.checkSizes, size({ title: 'css after:' })))
+    .pipe(gulpif(config.devMode, sourcemaps.write('.')))
+    .pipe(dest(config.paths.sass.out))
 
 // scripts
-const js = () => src(paths.js.in.modules, { sourcemaps: devBuild })
-    .pipe(babel({ presets: ['env'] }))
-    .pipe(src(paths.js.in.vendor, { sourcemaps: true }))
+const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
+    // .pipe(plumber())
+    .pipe(gulpif(!config.webpacked, babel({ presets: ['@babel/preset-env'] })))
+    .pipe(gulpif(config.webpacked, webpackstream(webpackconfig, webpack)))
+    .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
     .pipe(concat('bundle.min.js'))
-    .pipe(gulpif(!devBuild, size({ title: 'before uglify:' })))
+    .pipe(gulpif(config.checkSizes, size({ title: 'before uglify:' })))
     .pipe(uglify())
-    .pipe(gulpif(!devBuild, size({ title: 'after uglify:' })))
+    .pipe(gulpif(config.checkSizes, size({ title: 'after uglify:' })))
     .pipe(dest('./dist/js', { sourcemaps: '.'}))
 
-// webpack js builds
-// const jsbuild = () => src(paths.js.in.modules, { sourcemaps: true })
-//     .pipe(plumber())
-//     .pipe(webpackstream(webpackconfig, webpack))
-//     .pipe(dest('./dist/js', { sourcemaps: '.' }))
-
-
+// util for jslint
 const eslintResult = (done, exit = false) => result => {
-    // Called for each ESLint result.
-    console.log(`ESLint result: ${result.filePath}`)
-    console.log(`# Messages: ${result.messages.length}`)
-    console.log(`# Warnings: ${result.warningCount}`)
-    console.log(`# Errors: ${result.errorCount}`)
-
-    result.messages.forEach(c => {
-        console.log(c)
-    })
-
-    if (result.messages.length === 0) {
-        console.log('js validated correctly')
-    }
-
+    result.messages.forEach(c => { console.log(c) })
+    if (result.messages.length === 0) { console.log('js validated correctly') }
     if (exit) {
         done()
         process.exit(0)
     }
 }
-
 
 // lint scripts
 const jslint = done => {
@@ -197,15 +204,18 @@ const jslint = done => {
 
 // live preview
 const serve = () => browserSync({
-    server:{ baseDir: paths.buildFolder }, 
+    server:{ baseDir: config.paths.buildFolder }, 
     port: 3000,
     open: false,
     notify: true
 })
 
-// clean dist folder
+// clean dist and lintReport folders
 const clean = done => {
-    del([paths.buildFolder + '/*']).then(paths => { 
+    del([
+        config.paths.buildFolder + '/*', 
+        config.paths.lintReportsFolder + '/*'
+    ]).then(paths => { 
         done() 
         process.exit(0)
     })
@@ -216,13 +226,13 @@ const cleanSprites = done => {
     del(['./dist/icons/*.svg']).then(paths => { done() })
 }
 
-// reload browser (it will inject where possible without reloading)
+// reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
 	browserSync.reload()
 	done()
 }
 
-// stream browserSync
+// stream browserSync (needs manual website refresh after the change)
 const stream = done => { 
 	browserSync.stream()
 	done()
@@ -230,7 +240,7 @@ const stream = done => {
 
 // watch
 watch('src/js/bundle/**/*.js', series(js, reload))
-watch('src/sass/**/*.scss', series(styles, hmr ? reload : stream))
+watch('src/sass/**/*.scss', series(styles, config.hot ? reload : stream))
 watch('src/pug/**/*.pug', series(html, reload))
 watch('src/icons/**/*.svg', series(cleanSprites, sprites, reload))
 
