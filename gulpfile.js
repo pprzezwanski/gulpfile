@@ -26,13 +26,12 @@ const sourcemaps = require('gulp-sourcemaps')
 const svgsprite = require('gulp-svg-sprite')
 const uglify = require('gulp-uglify')
 const webpack = require("webpack")
-const webpackconfig = require("./webpack.config.js")
 const webpackstream = require("webpack-stream")
 
-sass.compiler = require('node-sass');
+sass.compiler = require('node-sass')
    
-// to set environment variable to production uncomment the line below:
-// process.env.NODE_ENV = 'production';
+// process.env.NODE_ENV = 'production'
+process.env.NODE_ENV = 'development'
 
 const config = {
     devMode: ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production'),
@@ -74,7 +73,7 @@ const config = {
     },
     sass: { // config for gulp-sass plugin
         precision: 10,
-        // imagePath: './src/images', // will be prepended to image name in sass files
+        imagePath: './src/images', // will be prepended to image name in sass files
     },
     sprite: { // config for gulp-svg-sprite plugin
         mode: {
@@ -90,6 +89,27 @@ const config = {
         failAfterError: false,
         reportOutputDir: 'reports/lint',
         reporters: [{ formatter: 'string', save: 'sass-lint-report.txt', console: false }]
+    },
+    webpack: {
+        mode: 'development',
+        devtool: 'eval-source-map',
+        entry: path.resolve(__dirname, './src/js/bundle/app.js'),
+        output: {
+            // path: path.resolve(__dirname, 'dist/js'),
+            filename: 'bundle.js'
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.js?$/,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: { presets: ['@babel/preset-env'] }
+                    }
+                }
+            ]
+        }
     }
 }
 
@@ -163,7 +183,7 @@ const styles = () => src([config.paths.sass.in, config.paths.sass.exclude])
 const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
     // .pipe(plumber())
     .pipe(gulpif(!config.webpacked, babel({ presets: ['@babel/preset-env'] })))
-    .pipe(gulpif(config.webpacked, webpackstream(webpackconfig, webpack)))
+    .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
     .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
     .pipe(concat('bundle.min.js'))
     .pipe(gulpif(config.checkSizes, size({ title: 'before uglify:' })))
