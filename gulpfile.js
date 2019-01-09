@@ -2,7 +2,7 @@ const { src, dest, parallel, watch, series } = require('gulp');
 
 const autoprefixer = require('autoprefixer');
 const babel = require('gulp-babel')
-const browserSync = require('browser-sync')
+const bs = require('browser-sync').create();
 const concat = require('gulp-concat')
 const cssnano = require('cssnano');
 const del = require('del')
@@ -14,15 +14,15 @@ const imagemin = require('gulp-imagemin')
 const merge = require('merge-stream')
 const newer = require('gulp-newer')
 const path = require('path')
-const plumber = require('gulp-plumber')
 const pkg = require('./package.json')
+const plumber = require('gulp-plumber')
 const postcss = require('gulp-postcss')
 const pug = require('gulp-pug')
 const rename = require('gulp-rename')
 const sass = require('gulp-sass')
 const size = require('gulp-size')
-const stylelint = require('gulp-stylelint')
 const sourcemaps = require('gulp-sourcemaps')
+const stylelint = require('gulp-stylelint')
 const svgsprite = require('gulp-svg-sprite')
 const uglify = require('gulp-uglify')
 const webpack = require("webpack")
@@ -223,8 +223,8 @@ const jslint = done => {
 }
 
 // live preview
-const serve = () => browserSync({
-    server:{ baseDir: config.paths.buildFolder }, 
+const preview = () => bs.init({
+    server: config.paths.buildFolder, 
     port: 3000,
     open: false,
     notify: true
@@ -248,24 +248,24 @@ const cleanSprites = done => {
 
 // reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
-	browserSync.reload()
+	bs.reload()
 	done()
 }
 
 // stream browserSync (needs manual website refresh after the change)
 const stream = done => { 
-	browserSync.stream()
+	bs.stream()
 	done()
 }
 
 // watch
-watch('src/js/bundle/**/*.js', series(js, reload))
+watch('src/js/bundle/**/*.js', series(js, config.hot ? reload : stream))
 watch('src/sass/**/*.scss', series(styles, config.hot ? reload : stream))
-watch('src/pug/**/*.pug', series(html, reload))
-watch('src/icons/**/*.svg', series(cleanSprites, sprites, reload))
+watch('src/pug/**/*.pug', series(html, config.hot ? reload : stream))
+watch('src/icons/**/*.svg', series(cleanSprites, sprites, config.hot ? reload : stream))
 
 // public tasks
-exports.default = series(parallel(images, sprites, fonts, html, styles, js), serve);
+exports.default = series(parallel(images, sprites, fonts, html, styles, js), preview);
 exports.build = series(clean, parallel(images, sprites, fonts, html, styles, js));
 exports.clean = clean
 exports.sprites = sprites
