@@ -8,7 +8,7 @@ Features:
 
 * Ability to choose between webpack bundling and concatenation that does not require app.js file
 
-* No need of app.sass file 
+* No need of app.scss file 
 
 * No need to relaunch gulp after changes in icons, adding new icons or deleting old ones
 
