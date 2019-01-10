@@ -2,7 +2,6 @@
   "name": "gulp4file",
   "version": "1.0.0",
   "description": "gulp4 + webpack4 configuration",
-  "main": "app.js",
   "scripts": {
     "start": "gulp",
     "build": "NODE_ENV=production gulp build"
@@ -28,8 +27,10 @@
     "gulp-eslint": "^5.0.0",
     "gulp-htmlmin": "^5.0.1",
     "gulp-if": "^2.0.2",
+    "gulp-imacss": "^1.0.0",
     "gulp-imagemin": "^5.0.3",
     "gulp-newer": "^1.4.0",
+    "gulp-order": "^1.2.0",
     "gulp-plumber": "^1.2.1",
     "gulp-postcss": "^8.0.0",
     "gulp-pug": "^4.0.1",
