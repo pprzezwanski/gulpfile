@@ -1,10 +1,10 @@
 const { src, dest, parallel, watch, series } = require('gulp');
 
-const autoprefixer = require('autoprefixer');
+const autoprefixer = require('autoprefixer')
 const babel = require('gulp-babel')
-const bs = require('browser-sync').create();
+const bs = require('browser-sync').create()
 const concat = require('gulp-concat')
-const cssnano = require('cssnano');
+const cssnano = require('cssnano')
 const del = require('del')
 const eslint = require('gulp-eslint')
 const fs = require('fs')
@@ -13,6 +13,7 @@ const htmlmin = require('gulp-htmlmin')
 const imagemin = require('gulp-imagemin')
 const merge = require('merge-stream')
 const newer = require('gulp-newer')
+const order = require('gulp-order')
 const path = require('path')
 const pkg = require('./package.json')
 const plumber = require('gulp-plumber')
@@ -31,7 +32,7 @@ const webpackstream = require("webpack-stream")
 sass.compiler = require('node-sass')
    
 // process.env.NODE_ENV = 'production'
-process.env.NODE_ENV = 'development'
+// process.env.NODE_ENV = 'development'
 
 const config = {
     devMode: ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production'),
@@ -44,18 +45,21 @@ const config = {
         lintReportsFolder: './reports/lint',
         sass: {
             in: './src/sass/**/*.scss',
-            exclude: '!./src/sass/vendor/*.scss',
+            vendor: './src/sass/vendor/*.scss',
+            watch: 'src/sass/**/*.scss',
             out: './dist/css'
         },
         pug: {
             in: './src/pug/*.pug',
+            watch: 'src/pug/**/*.pug',
             out: './dist/'
         },
         js: {
             in: {
-                modules: './src/js/bundle/modules/*.js',
-                vendor: './src/js/vendor/*.js*'
-            }, 
+                modules: 'src/js/bundle/modules/*.js',
+                vendor: 'src/js/vendor/*.js*'
+            },
+            watch: 'src/js/bundle/**/*.js',
             out: './dist/js'
         },
         images: {
@@ -68,6 +72,7 @@ const config = {
         },
         sprites: {
             folder: './src/icons',
+            watch: 'src/icons/**/*.svg',
             out: './dist/icons'
         }
     },
@@ -166,10 +171,12 @@ const html = () => src(config.paths.pug.in)
 	.pipe(dest(config.paths.pug.out))
 
 // sass
-const styles = () => src([config.paths.sass.in, config.paths.sass.exclude])
+const styles = () => src([config.paths.sass.in, '!' + config.paths.sass.vendor])
     .pipe(gulpif(config.devMode, sourcemaps.init()))
     .pipe(stylelint(config.styleLint))
     .pipe(sass((config.sass)).on('error', sass.logError))
+    // .pipe(src(config.paths.sass.vendor))
+    // .pipe(src(concate('styles.css')))
     .pipe(gulpif(config.checkSizes, size({ title: 'css before:' })))
     .pipe(postcss([
         autoprefixer({browsers: ['last 1 version']}),
@@ -185,6 +192,7 @@ const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
     .pipe(gulpif(!config.webpacked, babel({ presets: ['@babel/preset-env'] })))
     .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
     .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
+    // .pipe(gulpif(!config.webpacked, order([config.paths.js.in.vendor, config.paths.js.in.modules])))
     .pipe(concat('bundle.min.js'))
     .pipe(gulpif(config.checkSizes, size({ title: 'before uglify:' })))
     .pipe(uglify())
@@ -259,10 +267,10 @@ const stream = done => {
 }
 
 // watch
-watch('src/js/bundle/**/*.js', series(js, config.hot ? reload : stream))
-watch('src/sass/**/*.scss', series(styles, config.hot ? reload : stream))
-watch('src/pug/**/*.pug', series(html, config.hot ? reload : stream))
-watch('src/icons/**/*.svg', series(cleanSprites, sprites, config.hot ? reload : stream))
+watch(config.paths.js.watch, series(js, config.hot ? reload : stream))
+watch(config.paths.sass.watch, series(styles, config.hot ? reload : stream))
+watch(config.paths.pug.watch, series(html, config.hot ? reload : stream))
+watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hot ? reload : stream))
 
 // public tasks
 exports.default = series(parallel(images, sprites, fonts, html, styles, js), preview);
