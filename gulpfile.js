@@ -23,7 +23,7 @@ const rename = require('gulp-rename')
 const sass = require('gulp-sass')
 const size = require('gulp-size')
 const sourcemaps = require('gulp-sourcemaps')
-const stylelint = require('gulp-stylelint')
+const stylelinter = require('gulp-stylelint')
 const svgsprite = require('gulp-svg-sprite')
 const uglify = require('gulp-uglify')
 const webpack = require("webpack")
@@ -31,23 +31,37 @@ const webpackstream = require("webpack-stream")
 
 sass.compiler = require('node-sass')
    
-// process.env.NODE_ENV = 'production'
-// process.env.NODE_ENV = 'development'
+/**
+ * commands (remember first four): 
+ * 'gulp': default task for build and watch (without cleaning before) - fully minified + sourcemaps
+ * 'gulp clean': clean dist folder and reports folder
+ * 'gulp eslint': check js
+ * 'NODE_ENV=production gulp': build for production - fully minified, no sourcemaps
+ * 'gulp build: the same as gulp but with clean before
+ * 'NODE_ENV=production gulp build' - the same as NODE_ENV=production gulp but with clean before
+ */
 
+// utility for config
+const mode = process.env.NODE_ENV || 'development'
+
+// configuration of gulp
 const config = {
-    devMode: ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production'),
     hot: true, // hot module replacement - set to false if you want to refresh the browser manually
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
     checkSizes: false, // if true 'gulp build' will log how much space we have gained with minifying website
+    aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
     paths: {
         devFolder: './src',
         buildFolder: './dist',
         lintReportsFolder: './reports/lint',
         sass: {
-            in: './src/sass/**/*.scss',
+            in: './src/sass/styles.scss',
             vendor: './src/sass/vendor/*.scss',
             watch: 'src/sass/**/*.scss',
             out: './dist/css'
+        },
+        stylelintCheck: {
+            in: ['./src/sass/**/*.scss', '!./src/sass/vendor/*.scss']
         },
         pug: {
             in: './src/pug/*.pug',
@@ -64,10 +78,12 @@ const config = {
         },
         images: {
             in: ['./src/images/**/*.{png,jpg,jpeg,svg}'],
+            watch: './src/images/**/*',
             out: './dist/images'
         },
         fonts: {
             in: './src/fonts/**/*.{woff,woff2}',
+            watch: './src/fonts/**/*',
             out: './dist/fonts/'
         },
         sprites: {
@@ -90,14 +106,14 @@ const config = {
             }
         }
     },
-    styleLint: { // config for gulp-stylelint plugin
-        failAfterError: false,
+    styleLinter: { // config for gulp-stylelint plugin
+        // failAfterError: false,
         reportOutputDir: 'reports/lint',
-        reporters: [{ formatter: 'string', save: 'sass-lint-report.txt', console: false }]
+        // reporters: [{ formatter: 'string', save: 'sass-lint-report.txt', console: false }]
     },
     webpack: {
-        mode: 'development',
-        devtool: 'eval-source-map',
+        mode,
+        // devtool: 'eval-source-map',
         entry: path.resolve(__dirname, './src/js/bundle/app.js'),
         output: {
             // path: path.resolve(__dirname, 'dist/js'),
@@ -115,18 +131,20 @@ const config = {
                 }
             ]
         }
-    }
+    },
+    mode: mode === 'development' // this is set by ENV variables
 }
 
 // log config highlights at the beginning of a task
 console.log(
-    pkg.name + ' ' + pkg.version + '\n'
-    + 'mode: ' + (config.devMode ? 'development' : 'production') + '\n'
+    // pkg.name + ' ' + pkg.version + '\n'
+    'mode: ' + (config.mode ? 'development' : 'production') + '\n'
     + 'js bundling: ' + (config.webpacked ? 'webpack' : 'concatenation') + '\n'
-    + 'browser refresh type: ' + (config.hot ? 'hot module replacement': 'watch')
-);
+    + 'browser refresh type: ' + (config.hot ? 'hot module replacement': 'watch') + '\n'
+    + 'stylelint mode: ' + (config.aggressiveStyleLint ? 'aggressive' : 'hints are available in ./reports/lint')
+)
 
-// utils
+// utility
 const getFolders = dir => fs.readdirSync(dir)
 	.filter(file => fs.statSync(path.join(dir, file)).isDirectory())
 
@@ -169,11 +187,21 @@ const html = () => src(config.paths.pug.in)
     .pipe(htmlmin({ collapseWhitespace: true }))
     .pipe(gulpif(config.checkSizes, size({ title: 'HTML after:' }))) 
 	.pipe(dest(config.paths.pug.out))
+    
+// style linter for complex tasks like default, build, prod 
+const stylelintCheck = () => src(config.paths.stylelintCheck.in)
+    .pipe(stylelinter(Object.assign(config.styleLinter, { 
+        failAfterError: config.aggressiveStyleLint && config.mode === 'production', 
+        reporters: [{ 
+            formatter: 'string',
+            save: 'sass-lint-report.txt',
+            console: config.aggressiveStyleLint 
+        }]
+    })))
 
 // sass
-const styles = () => src([config.paths.sass.in, '!' + config.paths.sass.vendor])
+const styles = () => src(config.paths.sass.in)
     .pipe(gulpif(config.devMode, sourcemaps.init()))
-    .pipe(stylelint(config.styleLint))
     .pipe(sass((config.sass)).on('error', sass.logError))
     // .pipe(src(config.paths.sass.vendor))
     // .pipe(src(concate('styles.css')))
@@ -185,6 +213,15 @@ const styles = () => src([config.paths.sass.in, '!' + config.paths.sass.vendor])
     .pipe(gulpif(config.checkSizes, size({ title: 'css after:' })))
     .pipe(gulpif(config.devMode, sourcemaps.write('.')))
     .pipe(dest(config.paths.sass.out))
+
+// standalone style check task
+const stylelint = done => new Promise((resolve, reject) => {
+        stylelintCheck()
+        .on('end', resolve)
+    }).then(() => {   
+        done()
+        process.exit(0) 
+    })
 
 // scripts
 const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
@@ -267,14 +304,17 @@ const stream = done => {
 }
 
 // watch
+watch(config.paths.fonts.watch, series(fonts, config.hot ? reload : stream))
+watch(config.paths.images.watch, series(images, config.hot ? reload : stream))
+watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hot ? reload : stream))
 watch(config.paths.js.watch, series(js, config.hot ? reload : stream))
 watch(config.paths.sass.watch, series(styles, config.hot ? reload : stream))
 watch(config.paths.pug.watch, series(html, config.hot ? reload : stream))
-watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hot ? reload : stream))
 
 // public tasks
-exports.default = series(parallel(images, sprites, fonts, html, styles, js), preview);
-exports.build = series(clean, parallel(images, sprites, fonts, html, styles, js));
+exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles, js), preview);
+exports.build = series(clean, parallel(fonts, images, sprites, html, stylelintCheck, styles, js));
 exports.clean = clean
-exports.sprites = sprites
 exports.jslint = jslint
+exports.stylelint = stylelint
+exports.sprites = sprites
