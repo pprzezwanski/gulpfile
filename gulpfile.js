@@ -32,13 +32,11 @@ const webpackstream = require("webpack-stream")
 sass.compiler = require('node-sass')
    
 /**
- * commands (remember first four): 
- * 'gulp': default task for build and watch (without cleaning before) - fully minified + sourcemaps
- * 'gulp clean': clean dist folder and reports folder
- * 'gulp eslint': check js
+ * commands : 
+ * 'gulp': default task for build and watch (without cleaning before), fully minified + sourcemaps, never stops - neither for refresh nor for git pull and fix conflicts
+ * 'gulp refresh': run it in nother terminal to refresh dist folder and reports folder - it will clean folders, make standrad build and terminate itself
+ * 'gulp jslint': check js
  * 'NODE_ENV=production gulp': build for production - fully minified, no sourcemaps
- * 'gulp build: the same as gulp but with clean before
- * 'NODE_ENV=production gulp build' - the same as NODE_ENV=production gulp but with clean before
  */
 
 // utility for config
