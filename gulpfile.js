@@ -46,7 +46,8 @@ const mode = process.env.NODE_ENV || 'development'
 
 // configuration of gulp
 const config = {
-    hot: true, // hot module replacement - set to false if you want to refresh the browser manually
+    hotReload: true, // hotReload module replacement - set to false if you want to refresh the browser manually
+    autoOpen: false, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
     checkSizes: false, // if true 'gulp build' will log how much space we have gained with minifying website
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
@@ -140,7 +141,7 @@ console.log(
     // pkg.name + ' ' + pkg.version + '\n'
     'mode: ' + (config.mode ? 'development' : 'production') + '\n'
     + 'js bundling: ' + (config.webpacked ? 'webpack' : 'concatenation') + '\n'
-    + 'browser refresh type: ' + (config.hot ? 'hot module replacement': 'watch') + '\n'
+    + 'browser refresh type: ' + (config.hotReload ? 'hot module replacement': 'watch') + '\n'
     + 'stylelint mode: ' + (config.aggressiveStyleLint ? 'aggressive' : 'hints are available in ./reports/lint')
 )
 
@@ -159,7 +160,7 @@ const images = () => src(config.paths.images.in)
 // icons in sprites
 const sprites = done => {
 	const folders = getFolders(config.paths.sprites.folder)
-    if (folders.length === 0) return done()
+    // if (folders.length === 0) return done()
     const root = src(path.join(config.paths.sprites.folder, '/*.svg'))
         .pipe(svgsprite(config.sprite))
         .pipe(rename('sprite.svg'))
@@ -182,6 +183,7 @@ const fonts = () => src(config.paths.fonts.in)
   
 // pug
 const html = () => src(config.paths.pug.in)
+    .pipe(plumber())
     .pipe(pug())
     .pipe(gulpif(config.checkSizes, size({ title: 'HTML before:' })))
     .pipe(htmlmin({ collapseWhitespace: true }))
@@ -271,25 +273,28 @@ const jslint = done => {
 const preview = () => bs.init({
     server: config.paths.buildFolder, 
     port: 3000,
-    open: false,
+    open: config.autoOpen,
     notify: true
 })
 
-// clean dist and lintReport folders
-const clean = done => {
-    del([
-        config.paths.buildFolder + '/*', 
-        config.paths.lintReportsFolder + '/*'
-    ]).then(paths => { 
-        done() 
-        process.exit(0)
-    })
+// clean factory function
+const clean = (path, exit = null) => done => {
+    if (path) {
+        del(path).then(paths => { done() })
+    } else {
+        del([
+            config.paths.buildFolder + '/*', 
+            config.paths.lintReportsFolder + '/*'
+        ]).then(paths => { 
+            done() 
+            exit && process.exit(0)
+        })
+    }
 }
 
-// clean dist/icons folder
-const cleanSprites = done => {
-    del(['./dist/icons/*.svg']).then(paths => { done() })
-}
+const cleanSprites = clean(config.paths.sprites.out)
+const cleanImages = clean(config.paths.images.out)
+const cleanFonts = clean(config.paths.fonts.out)
 
 // reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
@@ -303,18 +308,21 @@ const stream = done => {
 	done()
 }
 
+// exit gulp
+const exit = done => { 
+    done()
+    process.exit(0) 
+}
+
 // watch
-watch(config.paths.fonts.watch, series(fonts, config.hot ? reload : stream))
-watch(config.paths.images.watch, series(images, config.hot ? reload : stream))
-watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hot ? reload : stream))
-watch(config.paths.js.watch, series(js, config.hot ? reload : stream))
-watch(config.paths.sass.watch, series(styles, config.hot ? reload : stream))
-watch(config.paths.pug.watch, series(html, config.hot ? reload : stream))
+watch(config.paths.fonts.watch, series(cleanFonts, fonts, config.hotReload ? reload : stream))
+watch(config.paths.images.watch, series(cleanImages, images, config.hotReload ? reload : stream))
+watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hotReload ? reload : stream))
+watch(config.paths.js.watch, series(js, config.hotReload ? reload : stream))
+watch(config.paths.sass.watch, series(styles, config.hotReload ? reload : stream))
+watch(config.paths.pug.watch, series(html, config.hotReload ? reload : stream))
 
 // public tasks
-exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles, js), preview);
-exports.build = series(clean, parallel(fonts, images, sprites, html, stylelintCheck, styles, js));
-exports.clean = clean
+exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles, js), preview)
+exports.refresh = series(clean(), parallel(fonts, images, sprites, html, stylelintCheck, styles, js), exit)
 exports.jslint = jslint
-exports.stylelint = stylelint
-exports.sprites = sprites
