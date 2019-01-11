@@ -1,3 +1,25 @@
+/**
+ * Gulp with "no 'ctr + c' workflow" and usefull configuration utilities.
+ * 
+ * Please look at the beginning of config object to see some options
+ * 
+ * Commands:
+ * 
+ * 'gulp': initiate the project with watch functionality. 
+ * 
+ * 'gulp refresh': if for some reason (but there should not be any 
+ * including images, fonts, incons and git operations)
+ * you want to clean dist folder and build it again, 
+ * don't terminate gulp watch. Just open another terminal 
+ * and make 'gulp refresh' - it will clean dist and reports folders,
+ * rebuild project and terminate itself while stil runing 'gulp' process 
+ * will take care for further files watching
+ * 
+ * 'js lint': if you want to check js with linter
+ * 
+ * 'NODE_ENV=production gulp refresh': build for production - fully minified, no sourcemaps
+ */
+
 const { src, dest, parallel, watch, series } = require('gulp');
 
 const autoprefixer = require('autoprefixer')
@@ -31,13 +53,6 @@ const webpackstream = require("webpack-stream")
 
 sass.compiler = require('node-sass')
    
-/**
- * commands : 
- * 'gulp': default task for build and watch (without cleaning before), fully minified + sourcemaps, never stops - neither for refresh nor for git pull and fix conflicts
- * 'gulp refresh': run it in nother terminal to refresh dist folder and reports folder - it will clean folders, make standrad build and terminate itself
- * 'gulp jslint': check js
- * 'NODE_ENV=production gulp': build for production - fully minified, no sourcemaps
- */
 
 // utility for config
 const mode = process.env.NODE_ENV || 'development'
