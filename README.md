@@ -2,9 +2,15 @@
 
 This is working modern gulp4 + webpack4 configuration file.
 
+Workflow (no 'ctr + c'):
+
+1. 'gulp': initiate the project with watch functionality. You can do any operations (on images, fonts, icons, sass, js, but also git pull and solve conflicts) and you don;t have to stop this process.
+2. 'gulp refresh': ff for some reason (but there shuold not be any including git operations) you want to clean dist folder and build it again, don't terminate gulp watch. Just open another terminal and make 'gulp refresh' - it will clean dist and reports folders, rebuild project and terminate itself while stil runing 'gulp' process will take care for further files watching
+3. 'js lint': if you want to check js with linter
+
 Features:
 
-* Up to date gulp4, webpack4 and all plugins (january 2019)
+* gulp4 with webpack4 as js bundler and all plugins - everything up to date in january 2019
 
 * Working sourcemaps for js (both in webpack and concatenation variants) as well as for sass
 
@@ -24,6 +30,6 @@ Features:
 
 * Ability to choose browser refresh type between hot module replacement behaviour and standard watch that needs manual browser refresh (sometimes it is better for comparing ‘before and after’ in two browsers tabs)
 
-* Information about chosen config highlights is logged to console when tasks starts 
+* Ability to choose if initializing gulp opens the browser autmatically or not
 
-* Separate 'gulp clean' task
+* Information about chosen config highlights is logged to console when tasks starts 
