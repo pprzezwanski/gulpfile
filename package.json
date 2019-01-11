@@ -1,10 +1,12 @@
 {
   "name": "gulp4file",
   "version": "1.0.0",
-  "description": "gulp4 + webpack4 configuration",
+  "description": "gulp4 with webpack4 as js bundler",
+  "main": "app.js",
   "scripts": {
     "start": "gulp",
-    "build": "NODE_ENV=production gulp build"
+    "build": "gulp refresh",
+    "prod": "NODE_ENV=production gulp refresh"
   },
   "repository": "https://github.com/pprzezwanski/gulp4file/blob/master/gulpfile.js",
   "author": "Pawel Przezwanski pprzezwanski@gmail.com",
