@@ -2,27 +2,20 @@
 
 This is working modern gulp4 + webpack4 configuration file.
 
-/**
- * Gulp with "no 'ctr + c' workflow" and usefull configuration utilities.
- * 
- * Please look at the beginning of config object to see some options
- * 
- * Commands:
- * 
- * 'gulp': initiate the project with watch functionality. 
- * 
- * 'gulp refresh': if for some reason (but there should not be any 
- * including images, fonts, incons and git operations)
- * you want to clean dist folder and build it again, 
- * don't terminate gulp watch. Just open another terminal 
- * and make 'gulp refresh' - it will clean dist and reports folders,
- * rebuild project and terminate itself while stil runing 'gulp' process 
- * will take care for further files watching
- * 
- * 'js lint': if you want to check js with linter
- * 
- * 'NODE_ENV=production gulp refresh': build for production - fully minified, no sourcemaps
- */
+
+Gulp with "no 'ctr + c' workflow" and usefull configuration utilities.
+
+Please look at the beginning of config object in gulpfile.js to see some options
+
+Commands:
+
+* 'gulp': initiate the project with watch functionality.
+
+* 'gulp refresh': if for some reason (but there should not be any (including images, fonts, incons and git operations) you want to clean dist folder and build it again, don't terminate gulp watch. Just open another terminal and make 'gulp refresh' - it will clean dist and reports folders, rebuild project and terminate itself while stil runing 'gulp' process will take care for further files watching
+
+* 'js lint': if you want to check js with linter
+
+* 'NODE_ENV=production gulp refresh': build for production - fully minified, no sourcemaps
 
 
 Features:
