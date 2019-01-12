@@ -17,7 +17,8 @@
  * 
  * 'js lint': if you want to check js with linter
  * 
- * 'NODE_ENV=production gulp refresh': build for production - fully minified, no sourcemaps
+ * 'yarn prod' or NODE_ENV=production gulp refresh': build for production - fully minified, 
+ * no sourcemaps, gulp will log file size before and after minification
  */
 
 const { src, dest, parallel, watch, series } = require('gulp');
@@ -53,17 +54,17 @@ const webpackstream = require("webpack-stream")
 
 sass.compiler = require('node-sass')
    
-
 // utility for config
 const mode = process.env.NODE_ENV || 'development'
 
 // configuration of gulp
 const config = {
     hotReload: true, // hotReload module replacement - set to false if you want to refresh the browser manually
-    autoOpen: false, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
+    autoOpen: true, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
-    checkSizes: false, // if true 'gulp build' will log how much space we have gained with minifying website
+    checkSizes: false, // if true gulp will log in development mode how much space we have gained with minifying files (for production mode it is default)
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
+    minifyCSS: true, // if set to true css is minified also in development mode (for production mode it is default)
     paths: {
         devFolder: './src',
         buildFolder: './dist',
@@ -146,13 +147,14 @@ const config = {
             ]
         }
     },
-    mode: mode === 'development' // this is set by ENV variables
+    devMode: mode === 'development', // this is set by ENV variables and will result in 'true' in development mode
+    mode: mode // this is set by ENV variables and results is 'development' or 'production'
 }
 
 // log config highlights at the beginning of a task
 console.log(
     // pkg.name + ' ' + pkg.version + '\n'
-    'mode: ' + (config.mode ? 'development' : 'production') + '\n'
+    'mode: ' + config.mode + '\n'
     + 'js bundling: ' + (config.webpacked ? 'webpack' : 'concatenation') + '\n'
     + 'browser refresh type: ' + (config.hotReload ? 'hot module replacement': 'watch') + '\n'
     + 'stylelint mode: ' + (config.aggressiveStyleLint ? 'aggressive' : 'hints are available in ./reports/lint')
@@ -165,9 +167,9 @@ const getFolders = dir => fs.readdirSync(dir)
 // images
 const images = () => src(config.paths.images.in)
     .pipe(newer(config.paths.images.out))
-    .pipe(gulpif(config.checkSizes, size({ title: 'before imagemin:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'before imagemin:' })))
     .pipe(imagemin())
-    .pipe(gulpif(config.checkSizes, size({ title: 'after imagemin:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'after imagemin:' })))
 	.pipe(dest(config.paths.images.out));
 
 // icons in sprites
@@ -177,13 +179,13 @@ const sprites = done => {
     const root = src(path.join(config.paths.sprites.folder, '/*.svg'))
         .pipe(svgsprite(config.sprite))
         .pipe(rename('sprite.svg'))
-        .pipe(gulpif(config.checkSizes, size({ title: 'main sprite:' })))
+        .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'main sprite:' })))
         .pipe(dest(config.paths.sprites.out))
 	const tasks = folders
 		.map((folder, index) => src(path.join(config.paths.sprites.folder, folder, '/**/*.svg'))
             .pipe(svgsprite(config.sprite))
             .pipe(rename('sprite-' + folder + '.svg'))
-            .pipe(gulpif(config.checkSizes, size({ title: 'additional sprite:' })))
+            .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'additional sprite:' })))
 			.pipe(dest(config.paths.sprites.out))
     )
 	return merge(tasks, root);
@@ -198,9 +200,9 @@ const fonts = () => src(config.paths.fonts.in)
 const html = () => src(config.paths.pug.in)
     .pipe(plumber())
     .pipe(pug())
-    .pipe(gulpif(config.checkSizes, size({ title: 'HTML before:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'HTML before:' })))
     .pipe(htmlmin({ collapseWhitespace: true }))
-    .pipe(gulpif(config.checkSizes, size({ title: 'HTML after:' }))) 
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'HTML after:' }))) 
 	.pipe(dest(config.paths.pug.out))
     
 // style linter for complex tasks like default, build, prod 
@@ -220,12 +222,10 @@ const styles = () => src(config.paths.sass.in)
     .pipe(sass((config.sass)).on('error', sass.logError))
     // .pipe(src(config.paths.sass.vendor))
     // .pipe(src(concate('styles.css')))
-    .pipe(gulpif(config.checkSizes, size({ title: 'css before:' })))
-    .pipe(postcss([
-        autoprefixer({browsers: ['last 1 version']}),
-        cssnano()
-    ]))
-    .pipe(gulpif(config.checkSizes, size({ title: 'css after:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css before:' })))
+    .pipe(postcss([autoprefixer({browsers: ['last 1 version']})]))
+    .pipe(gulpif(!config.devMode || config.minifyCSS, postcss([cssnano()])))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css after:' })))
     .pipe(gulpif(config.devMode, sourcemaps.write('.')))
     .pipe(dest(config.paths.sass.out))
 
@@ -246,9 +246,9 @@ const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
     .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
     // .pipe(gulpif(!config.webpacked, order([config.paths.js.in.vendor, config.paths.js.in.modules])))
     .pipe(concat('bundle.min.js'))
-    .pipe(gulpif(config.checkSizes, size({ title: 'before uglify:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'before uglify:' })))
     .pipe(uglify())
-    .pipe(gulpif(config.checkSizes, size({ title: 'after uglify:' })))
+    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'after uglify:' })))
     .pipe(dest('./dist/js', { sourcemaps: '.'}))
 
 // util for jslint
