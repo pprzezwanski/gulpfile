@@ -12,8 +12,8 @@
  * you want to clean dist folder and build it again, 
  * don't terminate gulp watch. Just open another terminal 
  * and make 'gulp refresh' - it will clean dist and reports folders,
- * rebuild project and terminate itself while stil runing 'gulp' process 
- * will take care for further files watching
+ * rebuild project and terminate itself while still running 'gulp' process 
+ * will take care for further watching
  * 
  * 'js lint': if you want to check js with linter
  * 
@@ -64,7 +64,6 @@ const config = {
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
     checkSizes: false, // if true gulp will log in development mode how much space we have gained with minifying files (for production mode it is default)
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
-    minifyCSS: true, // if set to true css is minified also in development mode (for production mode it is default)
     paths: {
         devFolder: './src',
         buildFolder: './dist',
@@ -223,8 +222,10 @@ const styles = () => src(config.paths.sass.in)
     // .pipe(src(config.paths.sass.vendor))
     // .pipe(src(concate('styles.css')))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css before:' })))
-    .pipe(postcss([autoprefixer({browsers: ['last 1 version']})]))
-    .pipe(gulpif(!config.devMode || config.minifyCSS, postcss([cssnano()])))
+    .pipe(postcss([
+        autoprefixer({browsers: ['last 1 version']}),
+        cssnano()
+    ]))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css after:' })))
     .pipe(gulpif(config.devMode, sourcemaps.write('.')))
     .pipe(dest(config.paths.sass.out))
