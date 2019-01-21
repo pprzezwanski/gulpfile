@@ -30,6 +30,7 @@ const concat = require('gulp-concat')
 const cssnano = require('cssnano')
 const del = require('del')
 const eslint = require('gulp-eslint')
+// const fontgen = require('gulp-fontgen')
 const fs = require('fs')
 const gulpif = require('gulp-if')
 const htmlmin = require('gulp-htmlmin')
@@ -97,6 +98,7 @@ const config = {
         },
         fonts: {
             in: './src/fonts/**/*.{woff,woff2}',
+            // in: './src/fonts/**/*.{ttf,otf}',
             watch: './src/fonts/**/*',
             out: './dist/fonts/'
         },
@@ -192,7 +194,8 @@ const sprites = done => {
 
 // fonts
 const fonts = () => src(config.paths.fonts.in)
-	.pipe(newer(config.paths.fonts.out))
+    .pipe(newer(config.paths.fonts.out))
+    // .pipe(fontgen({ dest: config.paths.fonts.out }));
 	.pipe(dest(config.paths.fonts.out))
   
 // pug
@@ -241,9 +244,10 @@ const stylelint = done => new Promise((resolve, reject) => {
 
 // scripts
 const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
-    // .pipe(plumber())
+    .pipe(plumber())
     .pipe(gulpif(!config.webpacked, babel({ presets: ['@babel/preset-env'] })))
     .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
+    // .pipe(gulpif(!config.webpacked, src(config.paths.js.in.vendor, { sourcemaps: config.devMode })))
     .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
     // .pipe(gulpif(!config.webpacked, order([config.paths.js.in.vendor, config.paths.js.in.modules])))
     .pipe(concat('bundle.min.js'))
@@ -288,7 +292,7 @@ const preview = () => bs.init({
     server: config.paths.buildFolder, 
     port: 3000,
     open: config.autoOpen,
-    notify: true
+    notify: false
 })
 
 // clean factory function
@@ -312,7 +316,7 @@ const cleanFonts = clean(config.paths.fonts.out)
 
 // reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
-	bs.reload()
+	bs.reload(/* {stream: true} */)
 	done()
 }
 
@@ -328,15 +332,16 @@ const exit = done => {
     process.exit(0) 
 }
 
-// watch
+// watch (some of tasks are made parallel to speed up reloading process)
 watch(config.paths.fonts.watch, series(cleanFonts, fonts, config.hotReload ? reload : stream))
 watch(config.paths.images.watch, series(cleanImages, images, config.hotReload ? reload : stream))
 watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hotReload ? reload : stream))
-watch(config.paths.js.watch, series(js, config.hotReload ? reload : stream))
-watch(config.paths.sass.watch, series(styles, config.hotReload ? reload : stream))
-watch(config.paths.pug.watch, series(html, config.hotReload ? reload : stream))
+watch(config.paths.js.watch, parallel(js, config.hotReload ? reload : stream))
+watch(config.paths.sass.watch, parallel(styles, config.hotReload ? reload : stream))
+watch(config.paths.pug.watch, parallel(html, config.hotReload ? reload : stream))
 
 // public tasks
-exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles, js), preview)
+exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles), js, preview)
 exports.refresh = series(clean(), parallel(fonts, images, sprites, html, stylelintCheck, styles, js), exit)
 exports.jslint = jslint
+exports.info = exit
