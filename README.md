@@ -2,7 +2,7 @@
 
 This is modern gulp4 + webpack4 or broserify as buildtools configuration.
 
-* "no 'ctr + c' workflow", 
+* "no 'ctr + c' workflow" (even for gulpfile changes), 
 * es6 syntax including import/export for modules
 * usefull configuration utilities, like choosing between 
 * broserify, webpack and concatenation as build tool

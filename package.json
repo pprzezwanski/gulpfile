@@ -1,11 +1,12 @@
 {
   "name": "gulp4file",
   "version": "1.0.0",
-  "description": "gulp4 + webpack4/broserify configuration",
+  "description": "gulp4 + webpack4 or browserify configuration",
   "main": "app.js",
   "scripts": {
-    "start": "gulp",
-    "build": "gulp refresh",
+    "gulp": "while true; do gulp; done;",
+    "build": "gulp build",
+    "refresh": "gulp refresh",
     "prod": "NODE_ENV=production gulp refresh"
   },
   "repository": "https://github.com/pprzezwanski/gulp4file/blob/master/gulpfile.js",
