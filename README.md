@@ -1,15 +1,22 @@
 # gulp4file
 
-This is working modern gulp4 + webpack4 configuration file.
+This is modern gulp4 + webpack4 or broserify as buildtools configuration.
 
-
-Gulp with "no 'ctr + c' workflow" and usefull configuration utilities.
+* "no 'ctr + c' workflow", 
+* es6 syntax including import/export for modules
+* usefull configuration utilities, like choosing between 
+* broserify, webpack and concatenation as build tool
+* source maps for css and js for every optional build tool
+* css and js linters
+* support for jquery (if needed)
 
 Please look at the beginning of config object in gulpfile.js to see some options
 
 Commands:
 
-* 'gulp': initiate the project with watch functionality.
+* 'gulp': initial build and live preview with hmr/watch functionality.
+
+* 'gulp info': to see the choosen config options (run it as parallel in another temrinal) 
 
 * 'gulp refresh': if for some reason (but there should not be any, including images, fonts, incons and git operations) you want to clean dist folder and build it again, don't terminate gulp watch. Just open another terminal and make 'gulp refresh' - it will clean dist and reports folders, rebuild project and terminate itself while still running 'gulp' process will take care for further 'watching'
 
@@ -20,9 +27,9 @@ Commands:
 
 Features:
 
-* gulp4 with webpack4 as js bundler and all plugins - everything up to date in january 2019
+* gulp4 with webpack4 or broserify as js bundler and all plugins - everything up to date in january 2019
 
-* Working sourcemaps for js (both in webpack and concatenation variants) as well as for sass
+* Working sourcemaps for js (in webpack, browserify and concatenation variants) as well as for sass.
 
 * Ability to choose between webpack bundling and concatenation that does not require app.js file
 
