@@ -1,6 +1,6 @@
 # gulp4file
 
-This is modern gulp4 + webpack4/browserify configuration, with:
+This is modern gulp4 + webpack4 or browserify configuration, with:
 
 * "no 'ctr + c' workflow" (even for gulpfile changes), 
 * es6 syntax including import/export for modules
@@ -15,6 +15,8 @@ Please look at the beginning of config object in gulpfile.js to see some options
 Commands:
 
 * 'gulp': initial build and live preview with hmr/watch functionality.
+
+* 'yarn gulp': the same as 'gulp' but if we change the gulpfile.js gulp will restart automatically 
 
 * 'gulp info': to see the choosen config options (run it as parallel in another temrinal) 
 
