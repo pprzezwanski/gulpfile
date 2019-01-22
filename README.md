@@ -1,11 +1,11 @@
 # gulp4file
 
-This is modern gulp4 + webpack4 or broserify as buildtools configuration.
+This is modern gulp4 + webpack4/browserify configuration, with:
 
 * "no 'ctr + c' workflow", 
 * es6 syntax including import/export for modules
 * usefull configuration utilities, like choosing between 
-* broserify, webpack and concatenation as build tool
+* browserify, webpack and concatenation as build tool
 * source maps for css and js for every optional build tool
 * css and js linters
 * support for jquery (if needed)
