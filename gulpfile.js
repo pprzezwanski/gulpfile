@@ -1,11 +1,18 @@
 /**
- * Gulp with "no 'ctr + c' workflow" and usefull configuration utilities.
+ * Gulp with:
+ * - "no 'ctr + c' workflow", 
+ * -  es6 syntax including import/export for modules
+ * -  usefull configuration utilities, like choosing between 
+ *    broserify, webpack and concatenation as build tool
+ * -  source maps for html, css and js for every optional build tool
+ * -  css and js linters
+ * -  support for jquery (if needed)
  * 
  * Please look at the beginning of config object to see some options
  * 
  * Commands:
  * 
- * 'gulp': initiate the project with watch functionality. 
+ * 'gulp': initial build and live preview with hmr/watch functionality. 
  * 
  * 'gulp refresh': if for some reason (but there should not be any 
  * including images, fonts, incons and git operations)
@@ -14,6 +21,8 @@
  * and make 'gulp refresh' - it will clean dist and reports folders,
  * rebuild project and terminate itself while still running 'gulp' process 
  * will take care for further watching
+ * 
+ * 'gulp info': to see the choosen config options (run it as parallel in another temrinal) 
  * 
  * 'js lint': if you want to check js with linter
  * 
@@ -50,9 +59,19 @@ const sourcemaps = require('gulp-sourcemaps')
 const stylelinter = require('gulp-stylelint')
 const svgsprite = require('gulp-svg-sprite')
 const uglify = require('gulp-uglify')
+
+// for webpack
 const webpack = require("webpack")
 const webpackstream = require("webpack-stream")
 
+// for browserify
+const browserify = require('browserify');
+const babelify = require('babelify');
+const source = require('vinyl-source-stream');
+const buffer = require('vinyl-buffer');
+const log = require('gulplog');
+
+// for sass
 sass.compiler = require('node-sass')
    
 // utility for config
@@ -63,8 +82,10 @@ const config = {
     hotReload: true, // hotReload module replacement - set to false if you want to refresh the browser manually
     autoOpen: true, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
+    noBuildTool: false, // if true gulp will use neither broserify nor webpack and instead all modules and vendor will be concatenated 
     checkSizes: false, // if true gulp will log in development mode how much space we have gained with minifying files (for production mode it is default)
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
+    uglifyJs: false, // if true gulp will uglify js also in development mode 
     paths: {
         devFolder: './src',
         buildFolder: './dist',
@@ -86,8 +107,12 @@ const config = {
         js: {
             in: {
                 modules: 'src/js/bundle/modules/*.js',
-                vendor: 'src/js/vendor/*.js*'
+                vendor: {
+                    all: 'src/js/vendor/*.js*',
+                    jquery: 'src/js/vendor/jquery*.js',
+                },
             },
+            temp: 'src/js/gulp-temp',
             watch: 'src/js/bundle/**/*.js',
             out: './dist/js'
         },
@@ -156,9 +181,16 @@ const config = {
 console.log(
     // pkg.name + ' ' + pkg.version + '\n'
     'mode: ' + config.mode + '\n'
-    + 'js bundling: ' + (config.webpacked ? 'webpack' : 'concatenation') + '\n'
+    + 'js bundling: ' + (
+        config.noBuildTool 
+            ? 'concatenation without build tool' 
+            : config.webpacked ? 'webpack' : 'browserify'
+        ) + '\n'
     + 'browser refresh type: ' + (config.hotReload ? 'hot module replacement': 'watch') + '\n'
-    + 'stylelint mode: ' + (config.aggressiveStyleLint ? 'aggressive' : 'hints are available in ./reports/lint')
+    + 'preview auto-open: ' + (config.autoOpen ? 'yes': 'no') + '\n'
+    + 'stylelint mode: ' + (config.aggressiveStyleLint ? 'aggressive' : 'hints are available in ./reports/lint') + '\n'
+    + '"gulp info" in another terminal to log this summary' + '\n'
+    + '"gulp refresh" in another terminal to clean folders andrebuild while watching'
 )
 
 // utility
@@ -200,7 +232,7 @@ const fonts = () => src(config.paths.fonts.in)
   
 // pug
 const html = () => src(config.paths.pug.in)
-    .pipe(plumber())
+    // .pipe(plumber())
     .pipe(pug())
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'HTML before:' })))
     .pipe(htmlmin({ collapseWhitespace: true }))
@@ -243,17 +275,53 @@ const stylelint = done => new Promise((resolve, reject) => {
     })
 
 // scripts
-const js = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
-    .pipe(plumber())
-    .pipe(gulpif(!config.webpacked, babel({ presets: ['@babel/preset-env'] })))
-    .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
-    // .pipe(gulpif(!config.webpacked, src(config.paths.js.in.vendor, { sourcemaps: config.devMode })))
-    .pipe(src(config.paths.js.in.vendor, { sourcemaps: config.devMode }))
-    // .pipe(gulpif(!config.webpacked, order([config.paths.js.in.vendor, config.paths.js.in.modules])))
+let initialBuild = true
+
+const jsWebpacked = () => {
+    const sourceStream = src(config.paths.js.in.modules, { sourcemaps: config.devMode}) 
+    const middleStream = initialBuild ? sourceStream.pipe(plumber()) : sourceStream
+    initialBuild = false;
+
+    return middleStream
+        .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
+        .pipe(rename('temp.js'))
+        .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */))
+}
+
+// old jsWebpacked kept 
+// const jsWebpacked = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
+//     .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
+//     .pipe(rename('temp.js'))
+//     .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */))
+
+const jsBrowserified = () => {
+    return browserify({
+        entries: './src/js/bundle/app.js',
+        debug: true
+    })
+    .transform(babelify.configure({ presets: ['@babel/preset-env'] }))
+    .bundle()
+    .pipe(source('temp.js'))
+    .pipe(buffer())
+    .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */))
+}
+
+const jsOnlyConcat = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode })
+    .pipe(concat('temp.js'))
+    .pipe(babel({ presets: ['@babel/preset-env'] }))
+    .pipe(dest(config.paths.js.temp, { sourcemaps: '.'}))
+
+const jsAddGlobals = () => src([
+        config.paths.js.in.vendor.jquery,
+        config.paths.js.in.vendor.all,
+        config.paths.js.temp + '/*.js'
+    ], { sourcemaps: config.devMode })
     .pipe(concat('bundle.min.js'))
-    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'before uglify:' })))
-    .pipe(uglify())
-    .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'after uglify:' })))
+    .pipe(gulpif((config.uglifyJs && config.checkSizes) || !config.devMode, size({ title: 'before uglify:' })))
+    .pipe(gulpif(config.uglifyJs || !config.devMode, uglify()))
+    // .pipe(uglify())
+    // .on('error', log.error)
+    .pipe(gulpif((config.uglifyJs && config.checkSizes) || !config.devMode, size({ title: 'after uglify:' })))
     .pipe(dest('./dist/js', { sourcemaps: '.'}))
 
 // util for jslint
@@ -302,7 +370,8 @@ const clean = (path, exit = null) => done => {
     } else {
         del([
             config.paths.buildFolder + '/*', 
-            config.paths.lintReportsFolder + '/*'
+            config.paths.lintReportsFolder + '/*',
+            config.paths.tempFolder + '/*'
         ]).then(paths => { 
             done() 
             exit && process.exit(0)
@@ -316,7 +385,7 @@ const cleanFonts = clean(config.paths.fonts.out)
 
 // reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
-	bs.reload(/* {stream: true} */)
+	bs.reload()
 	done()
 }
 
@@ -332,16 +401,33 @@ const exit = done => {
     process.exit(0) 
 }
 
+// js tasks grouped
+const js = series(
+    config.noBuildTool 
+        ? jsOnlyConcat
+        : config.webpacked ? jsWebpacked : jsBrowserified,
+    jsAddGlobals
+)
+
 // watch (some of tasks are made parallel to speed up reloading process)
-watch(config.paths.fonts.watch, series(cleanFonts, fonts, config.hotReload ? reload : stream))
-watch(config.paths.images.watch, series(cleanImages, images, config.hotReload ? reload : stream))
-watch(config.paths.sprites.watch, series(cleanSprites, sprites, config.hotReload ? reload : stream))
+const fontsWatcher = watch(config.paths.fonts.watch, series(/* cleanFonts,  */fonts, config.hotReload ? reload : stream))
+const imgWatcher = watch(config.paths.images.watch, series(/* cleanImages,  */images, config.hotReload ? reload : stream))
+const spritesWatcher = watch(config.paths.sprites.watch, series(/* cleanSprites,  */sprites, config.hotReload ? reload : stream))
 watch(config.paths.js.watch, parallel(js, config.hotReload ? reload : stream))
 watch(config.paths.sass.watch, parallel(styles, config.hotReload ? reload : stream))
 watch(config.paths.pug.watch, parallel(html, config.hotReload ? reload : stream))
 
+;[fontsWatcher, imgWatcher, spritesWatcher].forEach(c => {
+    c.on('unlink', filepath => {
+        const filePathFromSrc = path.relative(path.resolve('src'), filepath);
+        // Concatenating the 'build' absolute path used by gulp.dest in the scripts task
+        const destFilePath = path.resolve('dist', filePathFromSrc);
+        del.sync(destFilePath);
+    })
+})
+
 // public tasks
-exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles), js, preview)
+exports.default = series(parallel(fonts, images, sprites, html, stylelintCheck, styles, js), preview)
 exports.refresh = series(clean(), parallel(fonts, images, sprites, html, stylelintCheck, styles, js), exit)
 exports.jslint = jslint
 exports.info = exit
