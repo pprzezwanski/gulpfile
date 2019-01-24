@@ -80,13 +80,12 @@ const mode = process.env.NODE_ENV || 'development'
 // configuration of gulp
 const config = {
     hotReload: true, // hotReload module replacement - set to false if you want to refresh the browser manually
-    autoOpen: true, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
+    autoOpen: false, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
     noBuildTool: false, // if true gulp will use neither broserify nor webpack and instead all modules and vendor will be concatenated 
     checkSizes: false, // if true gulp will log in development mode how much space we have gained with minifying files (for production mode it is default)
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
-    uglifyJs: false, // if true gulp will uglify js also in development mode 
-    quitOnChange: false, // if true gulp will automatically quit if gulpfiled is saved (usefull with 'yarn gulp' command frrom package json that will restart gulp automatically)
+    optimizeDev: false, // if true gulp will optimize js, css and pug also in development mode 
     paths: {
         devFolder: './src',
         buildFolder: './dist',
@@ -236,7 +235,8 @@ const html = () => src(config.paths.pug.in)
     // .pipe(plumber())
     .pipe(pug())
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'HTML before:' })))
-    .pipe(htmlmin({ collapseWhitespace: true }))
+    .pipe(gulpif(config.optimizeDev || !config.devMode, htmlmin({ collapseWhitespace: true })))
+    // .pipe(htmlmin({ collapseWhitespace: true }))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'HTML after:' }))) 
 	.pipe(dest(config.paths.pug.out))
     
@@ -260,8 +260,9 @@ const styles = () => src(config.paths.sass.in)
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css before:' })))
     .pipe(postcss([
         autoprefixer({browsers: ['last 1 version']}),
-        cssnano()
-    ]))
+        config.optimizeDev || !config.devMode ? require('cssnano-util-raw-cache')() : false 
+        // cssnano() 
+    ].filter(Boolean)))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css after:' })))
     .pipe(gulpif(config.devMode, sourcemaps.write('.')))
     .pipe(dest(config.paths.sass.out))
@@ -276,24 +277,18 @@ const stylelint = done => new Promise((resolve, reject) => {
     })
 
 // scripts
-let initialBuild = true
+let initialBuild = true // this is because plumber was causing reload freezes on js change but it is helpful to prevent gulp quit on initial build error
 
 const jsWebpacked = () => {
     const sourceStream = src(config.paths.js.in.modules, { sourcemaps: config.devMode}) 
     const middleStream = initialBuild ? sourceStream.pipe(plumber()) : sourceStream
-    initialBuild = false;
+    initialBuild = false; 
 
     return middleStream
         .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
         .pipe(rename('temp.js'))
         .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */))
 }
-
-// old jsWebpacked kept 
-// const jsWebpacked = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode})
-//     .pipe(gulpif(config.webpacked, webpackstream(config.webpack, webpack)))
-//     .pipe(rename('temp.js'))
-//     .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */))
 
 const jsBrowserified = () => {
     return browserify({
@@ -318,11 +313,11 @@ const jsAddGlobals = () => src([
         config.paths.js.temp + '/*.js'
     ], { sourcemaps: config.devMode })
     .pipe(concat('bundle.min.js'))
-    .pipe(gulpif((config.uglifyJs && config.checkSizes) || !config.devMode, size({ title: 'before uglify:' })))
-    .pipe(gulpif(config.uglifyJs || !config.devMode, uglify()))
+    .pipe(gulpif((config.optimizeDev && config.checkSizes) || !config.devMode, size({ title: 'before uglify:' })))
+    .pipe(gulpif(config.optimizeDev || !config.devMode, uglify()))
     // .pipe(uglify())
     // .on('error', log.error)
-    .pipe(gulpif((config.uglifyJs && config.checkSizes) || !config.devMode, size({ title: 'after uglify:' })))
+    .pipe(gulpif((config.optimizeDev && config.checkSizes) || !config.devMode, size({ title: 'after uglify:' })))
     .pipe(dest('./dist/js', { sourcemaps: '.'}))
 
 // util for jslint
@@ -380,10 +375,6 @@ const clean = (path, exit = null) => done => {
     }
 }
 
-const cleanSprites = clean(config.paths.sprites.out)
-const cleanImages = clean(config.paths.images.out)
-const cleanFonts = clean(config.paths.fonts.out)
-
 // reload browser (it will inject new code where possible without reloading)
 const reload = done => { 
 	bs.reload()
@@ -418,6 +409,7 @@ const watchFiles = () => {
     const fontsWatcher = watch(config.paths.fonts.watch, series(/* cleanFonts,  */fonts, config.hotReload ? reload : stream))
     const imgWatcher = watch(config.paths.images.watch, series(/* cleanImages,  */images, config.hotReload ? reload : stream))
     const spritesWatcher = watch(config.paths.sprites.watch, series(/* cleanSprites,  */sprites, config.hotReload ? reload : stream))
+    
     ;[fontsWatcher, imgWatcher, spritesWatcher].forEach(c => {
         c.on('unlink', filepath => {
             const filePathFromSrc = path.relative(path.resolve('src'), filepath);
@@ -433,7 +425,14 @@ const watchFiles = () => {
     watch(config.paths.pug.watch, parallel(html, config.hotReload ? reload : stream))
     
     // automatically terminate gulp when a change in gulpfile is saved
-    if (config.quitOnChange) watch('./gulpfile.js', process.exit)
+    watch('./gulpfile.js', done => {
+        console.log('-------------')
+        console.log('THIS IS AUTO QUIT ON SAVE')
+        console.log('RUN "YARN GULP" TO ENABLE GULP AUTO-REOPEN')
+        console.log('-------------')
+        done()
+        process.exit(0)
+    })
 }
 
 const live = parallel(preview, watchFiles)
