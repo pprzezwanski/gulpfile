@@ -12,10 +12,7 @@
  * 
  * Commands:
  * 
- * 'gulp': initial build and live preview with hmr/watch functionality.
- * 
- * 'yarn gulp': the same as 'gulp' but if we change the gulpfile.js 
- *  gulp will restart automatically  
+ * 'gulp': initial build and live preview with hmr/watch functionality. 
  * 
  * 'gulp refresh': if for some reason (but there should not be any 
  * including images, fonts, incons and git operations)
@@ -83,12 +80,13 @@ const mode = process.env.NODE_ENV || 'development'
 // configuration of gulp
 const config = {
     hotReload: true, // hotReload module replacement - set to false if you want to refresh the browser manually
-    autoOpen: false, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
+    autoOpen: true, // if true the project will open in new browsers tab on every gulp command (if false we have to open in manually by typing the address logged into the console by browsersync)
     webpacked: true, // if false all js files will be concatenated instead of webpacked (no need to write app.js)
     noBuildTool: false, // if true gulp will use neither broserify nor webpack and instead all modules and vendor will be concatenated 
     checkSizes: false, // if true gulp will log in development mode how much space we have gained with minifying files (for production mode it is default)
     aggressiveStyleLint: false, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
     uglifyJs: false, // if true gulp will uglify js also in development mode 
+    quitOnChange: false, // if true gulp will automatically quit if gulpfiled is saved (usefull with 'yarn gulp' command frrom package json that will restart gulp automatically)
     paths: {
         devFolder: './src',
         buildFolder: './dist',
@@ -416,29 +414,34 @@ const js = series(
 const build = parallel(fonts, images, sprites, html, stylelintCheck, styles, js)
 
 // watch
-const fontsWatcher = watch(config.paths.fonts.watch, series(/* cleanFonts,  */fonts, config.hotReload ? reload : stream))
-const imgWatcher = watch(config.paths.images.watch, series(/* cleanImages,  */images, config.hotReload ? reload : stream))
-const spritesWatcher = watch(config.paths.sprites.watch, series(/* cleanSprites,  */sprites, config.hotReload ? reload : stream))
-;[fontsWatcher, imgWatcher, spritesWatcher].forEach(c => {
-    c.on('unlink', filepath => {
-        const filePathFromSrc = path.relative(path.resolve('src'), filepath);
-        // Concatenating the 'build' absolute path used by gulp.dest in the scripts task
-        const destFilePath = path.resolve('dist', filePathFromSrc);
-        del.sync(destFilePath);
+const watchFiles = () => {
+    const fontsWatcher = watch(config.paths.fonts.watch, series(/* cleanFonts,  */fonts, config.hotReload ? reload : stream))
+    const imgWatcher = watch(config.paths.images.watch, series(/* cleanImages,  */images, config.hotReload ? reload : stream))
+    const spritesWatcher = watch(config.paths.sprites.watch, series(/* cleanSprites,  */sprites, config.hotReload ? reload : stream))
+    ;[fontsWatcher, imgWatcher, spritesWatcher].forEach(c => {
+        c.on('unlink', filepath => {
+            const filePathFromSrc = path.relative(path.resolve('src'), filepath);
+            // Concatenating the 'build' absolute path used by gulp.dest in the scripts task
+            const destFilePath = path.resolve('dist', filePathFromSrc);
+            del.sync(destFilePath);
+        })
     })
-})
+    
+    // below we use parallel for tasks to speed up the reloading
+    watch(config.paths.js.watch, parallel(js, config.hotReload ? reload : stream))
+    watch(config.paths.sass.watch, parallel(styles, config.hotReload ? reload : stream))
+    watch(config.paths.pug.watch, parallel(html, config.hotReload ? reload : stream))
+    
+    // automatically terminate gulp when a change in gulpfile is saved
+    if (config.quitOnChange) watch('./gulpfile.js', process.exit)
+}
 
-// below we use parallel for tasks to speed up the reloading
-watch(config.paths.js.watch, parallel(js, config.hotReload ? reload : stream))
-watch(config.paths.sass.watch, parallel(styles, config.hotReload ? reload : stream))
-watch(config.paths.pug.watch, parallel(html, config.hotReload ? reload : stream))
-
-// watch gulpfile changes
-watch('./gulpfile.js', process.exit)
+const live = parallel(preview, watchFiles)
 
 // public tasks
-exports.default = series(build, preview)
+exports.default = series(build, live)
 exports.refresh = series(clean(), build, exit)
 exports.jslint = jslint
 exports.info = exit
 exports.build = build
+exports.live = live
