@@ -35,4 +35,4 @@ es6 including import/export modules for both webpack and browserify option
 ### gulp approach sum-up
 
 No 'ctr + c' workflow. No need to restart gulp any images, fonts, icons operations (or even gulpfile changes when 'yarn gulp' command).
-Rarely there is a nedd to 'gulp refresh' after git merging with conflicts
+Rarely there is a need to 'gulp refresh' after git merging with conflicts
