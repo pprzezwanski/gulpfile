@@ -1,0 +1,32 @@
+@mixin placeholder ($opacity, $color) {
+    
+    &::-webkit-input-placeholder {
+        opacity: $opacity;
+        color: $color;
+        @content;
+    }
+    
+    &:-moz-placeholder {
+        opacity: $opacity;
+        color: $color;
+        @content;
+    }
+    
+    &::-moz-placeholder {
+        opacity: $opacity;
+        color: $color;
+        @content;
+    }
+    
+    &:-ms-input-placeholder {
+        opacity: $opacity;
+        color: $color;
+        @content;
+    }
+}
+
+@mixin reset-list() {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}

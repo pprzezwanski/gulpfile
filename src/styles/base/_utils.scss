@@ -1,0 +1,21 @@
+.absolute {
+	position: absolute;
+}
+
+.relative {
+	position: relative;
+}
+
+.f-center {
+	display: flex;
+	flex-flow: column nowrap;
+	align-items: center;
+	justify-content: center;
+}
+
+.f-center-v {
+	display: flex;
+	flex-flow: column nowrap;
+	align-items: flex-start;
+	justify-content: center;
+}

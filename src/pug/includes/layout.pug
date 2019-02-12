@@ -1,0 +1,14 @@
+include ../mixins/icon
+include ../mixins/image
+include ../mixins/lazy-image
+
+doctype html
+
+html(lang="en")
+    include ../includes/head
+    body
+        include ../sections/header
+        main
+            block content
+        include ../sections/footer 
+        include ./scripts

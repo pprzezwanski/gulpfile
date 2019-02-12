@@ -1,0 +1,25 @@
+// fonts
+$font-family-basic: 'Gotham';
+$font-size-basic: 1.6rem;
+
+// links
+$link-color: red;
+
+// colors
+$color-black: #000;
+$color-white: #fff;
+
+//colors-by-function
+$color-basic-dark: $color-black;
+
+// breakpoints (1em = 16px)
+$breakpoint-xs: 35em; // 576px
+$breakpoint-sm: 48em; // 768px
+$breakpoint-md: 62em; //992px
+$breakpoint-lg: 75em; //1200px
+$breakpoint-xl: 85em; //1360px
+$breakpoint-xxl: 92.5em; //1480px
+
+//transitions
+$transition-duration: 0.3s;
+$transition-function: ease;

@@ -1,0 +1,66 @@
+.form {
+	display: flex;
+	flex-flow: column nowrap;
+	align-items: flex-start;
+	width: 100%;
+
+	@include min(sm) {
+		flex-flow: row wrap;
+		align-items: stretch;
+		// padding: 0 2rem;
+	}
+
+	&__field {
+		width: 100%;
+		position: relative;
+		margin-bottom: 3rem;
+
+		@include min(lg) {
+			width: 50%;
+			padding-right: 2rem;	
+			margin-bottom: 4.5rem;
+		}
+	}
+
+	&__label {
+		font-size: 1.6rem;
+		line-height: 2.1rem;
+		color: $color-black;
+	}
+
+	&__input {
+		width: 100%;
+		height: 4.2rem;
+		border: 1px solid $color-black;
+		background: $color-black;
+		padding-left: 1.5rem;
+		// margin-bottom: 3rem;
+		margin: 0;
+		color: $color-black;		
+
+		@include placeholder(1, $color-black) {
+			position: relative;
+			top: .2em;
+		};
+
+		// border-color: $color-black-2
+	}
+
+	&__caret-down {
+		position: absolute;
+		right: 1.8rem;
+		bottom: 1.65rem;
+		
+		@include min(lg) {
+			right: 3.8rem;
+		}
+	}
+
+	&__btn-wrapper {
+		display: flex;
+	}
+
+	input.btn {
+		border: none;
+	}
+}

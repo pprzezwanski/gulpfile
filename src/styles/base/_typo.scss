@@ -1,0 +1,101 @@
+h1, .h1 {
+    // font-size: 4rem;
+    // line-height: 1.2;
+    // @extend %bold;
+
+
+    // @include min(md) {
+    //     font-size: 4rem;
+    // }
+
+    // @include min(lg) {
+    //     font-size: 5.5rem;
+    // }
+
+}
+
+h2, .h2 {
+    // font-size: 3.2rem;
+    // @extend %bold;
+    // line-height: 1.2;
+}
+
+h3, .h3 {
+    // font-size: 2.8rem;
+    // @extend %bold;
+    // line-height: 1.1;
+}
+
+h4, .h4 {
+    // font-size: 2rem;
+    // @extend %bold;
+    // line-height: 1.1;
+}
+
+h5, .h5 {
+    // font-size: 1.8rem;
+    // @extend %regular;
+    // line-height: 1.3;
+}
+
+p {
+    // font-size: 1.8rem;
+    // line-height: 1.3333;
+}
+
+.copy {
+    // @extend p;
+}
+
+// .black, %black {
+//     font-weight: 900;
+// }
+
+// .ultra-bold, %ultra-bold {
+//     font-weight: 800;
+// }
+
+.bold, %bold {
+    font-weight: 700;
+}
+
+.semibold, %semibold {
+    font-weight: 600;
+}
+
+.medium, %medium {
+    font-weight: 500;
+}
+
+.regular, %regular {
+    font-weight: 400;
+}
+
+.light, %light {
+    font-weight: 300;
+}
+
+// .ultra-light, %ultra-light {
+//     font-weight: 200;
+// }
+
+// .hairline, %hairline {
+//     font-weight: 100;
+// }
+
+.italic {
+    font-style: italic;
+}
+
+.white {
+    color: $color-white;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+

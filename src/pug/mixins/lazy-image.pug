@@ -1,0 +1,4 @@
+mixin lazy-image(dataSrc, alt, classname)
+  - const srcset = dataSrc.replace(/(\.\w+$)/, '@2x$1')
+
+    img(data-src=dataSrc srcset=`${srcset} 2x` alt=alt class=classname)
