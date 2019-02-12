@@ -1,7 +1,6 @@
-# sj-static.web
+# gulp4 boilerplate
 
-[Main](https://darwinapps.github.io/sj-static.web/dist/index.html)
-[Project](https://darwinapps.github.io/sj-static.web/dist/project.html)
+[Main]()
 
 ### Install packages
 ```
