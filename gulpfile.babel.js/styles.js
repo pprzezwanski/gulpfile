@@ -1,4 +1,3 @@
-import { config } from './config';
 
 import { src, dest } from 'gulp';
 import size from 'gulp-size';
@@ -8,6 +7,7 @@ import sass from 'gulp-sass';
 import sourcemaps from 'gulp-sourcemaps';
 import postcss from 'gulp-postcss';
 import autoprefixer from 'autoprefixer';
+import { config } from './config';
 
 // for sass
 sass.compiler = require('node-sass');
@@ -20,9 +20,9 @@ export const styles = () => src(config.paths.sass.in)
     // .pipe(src(concate('styles.css')))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css before:' })))
     .pipe(postcss([
-        autoprefixer({browsers: ['last 1 version']}),
-        config.optimizeDev || !config.devMode ? require('cssnano-util-raw-cache')() : false 
-        // cssnano() 
+        autoprefixer({ browsers: ['last 1 version'] }),
+        config.optimizeDev || !config.devMode ? require('cssnano-util-raw-cache')() : false,
+        // cssnano()
     ].filter(Boolean)))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css after:' })))
     .pipe(gulpif(config.devMode, sourcemaps.write('.')))

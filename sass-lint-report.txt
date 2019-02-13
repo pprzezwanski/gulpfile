@@ -1,0 +1,4 @@
+
+src/sass/base/_defaults.scss
+ 20:1  ✖  Expected no more than 2 empty lines   max-empty-lines
+

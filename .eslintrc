@@ -1,5 +1,10 @@
 {
-	"parserOptions": {
+    "extends": "airbnb-base",
+    "env": {
+        "browser": true,
+        "node": true
+    },
+    "parserOptions": {
         "ecmaVersion": 6,
         "sourceType": "module",
         "ecmaFeatures": {
@@ -7,6 +12,10 @@
         }
 	},
     "rules": {
-        "semi": 2
+        "semi": 2,
+        "indent": ["error", 4],
+        "import/no-extraneous-dependencies": 0,
+        "no-unused-vars": 0,
+        "import/prefer-default-export": 0
     }
 }

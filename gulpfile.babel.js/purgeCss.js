@@ -1,5 +1,4 @@
 // purge unsued css from bootstrap grid
-
 import { config } from './config';
 
 import { src, dest } from 'gulp';

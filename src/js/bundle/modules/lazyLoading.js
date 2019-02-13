@@ -1,5 +1,5 @@
-import LazyLoad from "vanilla-lazyload";
+import LazyLoad from 'vanilla-lazyload';
 
 const lazy = new LazyLoad({
-	elements_selector: '.lazy'
+    elements_selector: '.lazy',
 });

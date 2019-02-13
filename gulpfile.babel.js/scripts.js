@@ -1,4 +1,3 @@
-import { config } from './config';
 
 import { src, dest, series } from 'gulp';
 import size from 'gulp-size';
@@ -19,13 +18,16 @@ import babelify from 'babelify';
 import source from 'vinyl-source-stream';
 import buffer from 'vinyl-buffer';
 
+//config
+import { config } from './config';
+
 // scripts
 let initialBuild = true; // this is because plumber was causing reload freezes on js change but it is helpful to prevent gulp quit on initial build error
 
 const jsWebpacked = () => {
-    const sourceStream = src(config.paths.js.in.modules, { sourcemaps: config.devMode}); 
+    const sourceStream = src(config.paths.js.in.modules, { sourcemaps: config.devMode });
     const middleStream = initialBuild ? sourceStream.pipe(plumber()) : sourceStream;
-    initialBuild = false; 
+    initialBuild = false;
 
     return middleStream
         .pipe(webpackstream(config.webpack, webpack))
@@ -34,8 +36,7 @@ const jsWebpacked = () => {
         .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */));
 };
 
-const jsBrowserified = () => {
-    return browserify({
+const jsBrowserified = () => browserify({
         entries: './src/js/bundle/app.js',
         debug: true
     })
@@ -44,29 +45,28 @@ const jsBrowserified = () => {
     .pipe(source('temp.js'))
     .pipe(buffer())
     .pipe(dest(config.paths.js.temp/* , { sourcemaps: '.'} */));
-};
 
 const jsOnlyConcat = () => src(config.paths.js.in.modules, { sourcemaps: config.devMode })
     .pipe(concat('temp.js'))
     .pipe(babel({ presets: ['@babel/preset-env'] }))
-    .pipe(dest(config.paths.js.temp, { sourcemaps: '.'}));
+    .pipe(dest(config.paths.js.temp, { sourcemaps: '.' }));
 
 const jsAddGlobals = () => src([
-        config.paths.js.in.vendor.jquery,
-        config.paths.js.in.vendor.all,
-        config.paths.js.temp + '/*.js'
-    ], { sourcemaps: config.devMode })
+    config.paths.js.in.vendor.jquery,
+    config.paths.js.in.vendor.all,
+    `${config.paths.js.temp  }/*.js`,
+], { sourcemaps: config.devMode })
     .pipe(concat('bundle.min.js'))
     .pipe(gulpif((config.optimizeDev && config.checkSizes) || !config.devMode, size({ title: 'before uglify:' })))
     .pipe(gulpif(config.optimizeDev || !config.devMode, uglify()))
     // .pipe(uglify())
     // .on('error', log.error)
     .pipe(gulpif((config.optimizeDev && config.checkSizes) || !config.devMode, size({ title: 'after uglify:' })))
-    .pipe(dest('./dist/js', { sourcemaps: '.'}));
+    .pipe(dest('./dist/js', { sourcemaps: '.' }));
 
 // util for jslint
-const eslintResult = (done, exit = false) => result => {
-    result.messages.forEach(c => { console.log(c); });
+const eslintResult = (done, exit = false) => (result) => {
+    result.messages.forEach((c) => { console.log(c); });
     if (result.messages.length === 0) { console.log('js validated correctly'); }
     if (exit) {
         done();
@@ -76,8 +76,8 @@ const eslintResult = (done, exit = false) => result => {
 
 // js tasks grouped
 export const scripts = series(
-    config.noBuildTool 
+    config.noBuildTool
         ? jsOnlyConcat
         : config.webpacked ? jsWebpacked : jsBrowserified,
-    jsAddGlobals
+    jsAddGlobals,
 );

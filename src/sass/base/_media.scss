@@ -1,0 +1,54 @@
+// MEDIA QUERRY MANAGER
+// 1em is 16px;
+
+@mixin min($breakpoint) {
+    @if $breakpoint == xs {
+        @media (min-width: $breakpoint-xs) {@content}
+    }
+
+    @if $breakpoint == sm {
+        @media (min-width: $breakpoint-sm) {@content}
+    }
+
+    @if $breakpoint == md {
+        @media (min-width: $breakpoint-md) {@content}
+    }
+
+    @if $breakpoint == lg {
+        @media (min-width: $breakpoint-lg) {@content}
+    }
+    
+    @if $breakpoint == xl {
+        @media (min-width: $breakpoint-xl) {@content}
+    }
+
+    @if $breakpoint == xxl {
+        @media (min-width: $breakpoint-xxl) {@content}
+    }
+}
+
+@mixin max($breakpoint) {
+    @if $breakpoint == xs {
+        @media (max-width: $breakpoint-xs) {@content}
+    }
+
+    @if $breakpoint == sm {
+        @media (max-width: $breakpoint-sm) {@content}
+    }
+
+    @if $breakpoint == md {
+        @media (max-width: $breakpoint-md) {@content}
+    }
+
+    @if $breakpoint == lg {
+        @media (max-width: $breakpoint-lg) {@content}
+    }
+    
+    @if $breakpoint == xl {
+        @media (max-width: $breakpoint-xl) {@content}
+    }
+
+    @if $breakpoint == xxl {
+        @media (max-width: $breakpoint-xxl) {@content}
+    }
+}

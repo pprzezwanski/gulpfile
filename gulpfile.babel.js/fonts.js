@@ -1,6 +1,6 @@
 import { config } from './config';
 
-import { src, dest, parallel, watch, series } from 'gulp';
+import { src, dest } from 'gulp';
 
 import newer from 'gulp-newer';
 
