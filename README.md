@@ -15,10 +15,12 @@ This is modern gulp4 boilerplate with `no 'ctr + c' workflow`, including:
 * ability to check sizes before and after minification (for html, css, js, images)
 
 
+
 ## Install packages
 ```
 yarn
 ```
+
 
 ## Run project
 
@@ -37,6 +39,7 @@ to make gulp restarting automatically on any saved gulpfile.js change
 gulp refresh
 ```
 if for some reason (but there should not be any, including images, fonts, icons and git operations) you want to clean dist folder and build it again, don't terminate 'gulp' process. Just open another terminal and make 'gulp refresh' - it will clean dist and reports folders, rebuild project and terminate itself while still running 'gulp' process will take care for further 'watching'
+
 
 ## Production build
 ```
