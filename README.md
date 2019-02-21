@@ -27,13 +27,12 @@ yarn
 * Please take a look at the beginning of config object in gulpfile.babel.js/config.js to see some useful options
 
 ```
-gulp
+yarn start (or: npm start) - this will make gulp restarting automatically on any saved gulpfile.js change or termination
 ```
 
 ```
-yarn gulp
+gulp - this will also work but without automatic relaunch of gulp
 ```
-to make gulp restarting automatically on any saved gulpfile.js change
 
 ```
 gulp refresh
@@ -43,9 +42,12 @@ if for some reason (but there should not be any, including images, fonts, icons 
 
 ## Production build
 ```
-yarn build
+yarn build (or: npm run build)
 ```
 fully minified, no sourcemaps, gulp will log file size before and after minification
+
+### IMPORTANT
+#### 'yarn build' will remove all unused classes from css so be sure to include in whitelist (gulpfile.babel.js/config.js in object: config.purgeCssWhiteList) all classes that are not present in html before javascript runs (classes in html rendered by js scripts)
 
 
 ## Other gulp commands

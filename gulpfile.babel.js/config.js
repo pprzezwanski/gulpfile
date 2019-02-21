@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+
 const mode = process.env.NODE_ENV || 'development';
 
 const root = './';
@@ -17,9 +19,10 @@ export const config = {
     // aggressiveStyleLint: true, // if true gulp will console.log errors and in production mode will prevent finalizing while if false gulp will write errors to ./reports/lint/
     optimizeDev: false, // if true gulp will optimize js, css and pug also in development mode
     turbo: {
-        on: true, // when true will make reload parallel to recompile (instead of series)
-        delay: 50, // 0 delay works well for almost all changes but usually some of them require additional micro delay f
+        on: false, // when true will make reload parallel to recompile (instead of series)
+        delay: 100, // 0 delay works well for almost all changes but usually some of them require additional micro delay f
     },
+    purgeCssWhiteList: [/mkto/, /tns/, /data-subtly/, /has/, /is/, /nav/], // will not purge any class matched by regex
     paths: {
         devFolder: `${root}src`,
         buildFolder: `${root}dist`,
@@ -45,6 +48,11 @@ export const config = {
             in: `${root}dist/css/styles.css`,
             html: `${root}dist/*.html`,
             globals: './checkCssGlobals',
+        },
+        purgeCss: {
+            in: `${root}dist/css/styles.css`,
+            out: `${root}dist/css/`,
+            content: [`${root}dist/index.html`],
         },
         js: {
             in: {
