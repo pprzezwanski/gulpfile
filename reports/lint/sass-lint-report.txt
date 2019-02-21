@@ -1,5 +1,0 @@
-
-src/sass/base/_defaults.scss
- 47:1  ✖  Expected no more than 2 empty lines   max-empty-lines
- 48:1  ✖  Expected no more than 2 empty lines   max-empty-lines
-
