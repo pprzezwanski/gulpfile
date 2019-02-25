@@ -22,7 +22,7 @@ export const config = {
         on: false, // when true will make reload parallel to recompile (instead of series)
         delay: 100, // 0 delay works well for almost all changes but usually some of them require additional micro delay f
     },
-    purgeCssWhiteList: [/mkto/, /tns/, /data-subtly/, /has/, /is/, /nav/], // will not purge any class matched by regex
+    purgeCssWhiteList: [/data/, /has/, /is/, /nav/, /init/, /load/, /mkto/, /tns/], // will not purge any class matched by regex
     paths: {
         devFolder: `${root}src`,
         buildFolder: `${root}dist`,

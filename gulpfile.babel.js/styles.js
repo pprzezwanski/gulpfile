@@ -1,12 +1,12 @@
+/*  eslint-disable global-require */
 
 import { src, dest } from 'gulp';
 import size from 'gulp-size';
 import gulpif from 'gulp-if';
-
 import sass from 'gulp-sass';
 import sourcemaps from 'gulp-sourcemaps';
 import postcss from 'gulp-postcss';
-import autoprefixer from 'autoprefixer';
+import postcssPresetEnv from 'postcss-preset-env';
 import { config } from './config';
 
 // for sass
@@ -20,7 +20,13 @@ export const styles = () => src(config.paths.sass.in)
     // .pipe(src(concate('styles.css')))
     .pipe(gulpif(config.checkSizes || !config.devMode, size({ title: 'css before:' })))
     .pipe(postcss([
-        autoprefixer({ browsers: ['last 1 version'] }),
+        postcssPresetEnv({
+            /* use stage 3 features + css nesting rules */
+            stage: 3,
+            features: {
+                'nesting-rules': true,
+            },
+        }),
         config.optimizeDev || !config.devMode ? require('cssnano-util-raw-cache')() : false,
         // cssnano()
     ].filter(Boolean)))

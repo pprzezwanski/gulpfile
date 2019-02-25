@@ -1,35 +1,3 @@
-/**
- * Gulp with:
- * - "no 'ctr + c' workflow",
- * -  es6 syntax including import/export for modules
- * -  usefull configuration utilities, like choosing between
- *    broserify, webpack and concatenation as build tool
- * -  source maps for html, css and js for every optional build tool
- * -  css and js linters
- * -  support for jquery (if needed)
- *
- * Please look at the beginning of config object to see some options
- *
- * Commands:
- *
- * 'gulp': initial build and live preview with hmr/watch functionality.
- *
- * 'gulp refresh': if for some reason (but there should not be any
- * including images, fonts, incons and git operations)
- * you want to clean dist folder and build it again,
- * don't terminate gulp watch. Just open another terminal
- * and make 'gulp refresh' - it will clean dist and reports folders,
- * rebuild project and terminate itself while still running 'gulp' process
- * will take care for further watching
- *
- * 'gulp info': to see the choosen config options (run it as parallel in another temrinal)
- *
- * 'js lint': if you want to check js with linter
- *
- * 'yarn prod' or NODE_ENV=production gulp refresh': build for production - fully minified,
- * no sourcemaps, gulp will log file size before and after minification
- */
-
 import { parallel, watch, series } from 'gulp';
 
 // gulp modules imports
