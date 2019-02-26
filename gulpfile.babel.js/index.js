@@ -11,6 +11,7 @@ import { clean } from './clean';
 import { purgeCss } from './purgeCss';
 import { unusedCss } from './checkCss';
 import { preview } from './browserSync';
+import { checkUnusedImages } from './checkUnusedImages';
 
 // log config highlights at the beginning of a task
 console.log(
@@ -22,7 +23,7 @@ console.log(
             : config.webpacked ? 'webpack' : 'browserify'  }\n`
     + `browser refresh type: ${  config.hotReload ? 'hot module replacement': 'watch'  }\n`
     + `preview auto-open: ${  config.autoOpen ? 'yes': 'no'  }\n`
-    + `"gulp refresh" in another terminal to clean folders and rebuild while watching`,
+    + `"gulp refresh" in another terminal to clean folders and rebuild while watching\n`,
 );
 
 const live = parallel(preview, watchFiles);
@@ -43,3 +44,4 @@ exports.preview = preview;
 exports.stylelint = series(stylelint, exit);
 exports.purgeCss = series(purgeCss, exit);
 exports.checkCss = series(unusedCss, exit);
+exports.img = series(checkUnusedImages, exit);

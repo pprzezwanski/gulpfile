@@ -50,6 +50,7 @@
     "gulp-stylelint": "^8.0.0",
     "gulp-svg-sprite": "^1.5.0",
     "gulp-uglify": "^3.0.1",
+    "gulp-unused-images": "^1.1.2",
     "gulplog": "^1.0.0",
     "merge-stream": "^1.0.1",
     "node-sass": "^4.11.0",
