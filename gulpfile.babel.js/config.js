@@ -108,7 +108,7 @@ export const config = {
     },
     webpack: {
         mode,
-        // devtool: 'eval-source-map',
+        devtool: 'eval-source-map',
         entry: `${root}src/js/bundle/app.js`,
         output: {
             // path: path.resolve(__dirname, 'dist/js'),
